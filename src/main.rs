@@ -59,9 +59,9 @@ fn encode_image(
     texture: ID3D11Texture2D,
     bitmap_encoder: BitmapEncoder,
 ) -> windows::core::Result<()> {
-    let desc = &mut D3D11_TEXTURE2D_DESC::default();
+    let mut desc = D3D11_TEXTURE2D_DESC::default();
     unsafe {
-        texture.GetDesc(desc);
+        texture.GetDesc(&mut desc);
     }
     let pixels = get_bytes_from_texture(texture);
     bitmap_encoder.SetPixelData(
@@ -126,9 +126,9 @@ fn get_bytes_from_texture(texture: ID3D11Texture2D) -> Vec<u8> {
 
     let staging_texture = prepare_staging_texture(texture).expect("cannot prepare staging texture");
 
-    let desc = &mut D3D11_TEXTURE2D_DESC::default();
+    let mut desc = D3D11_TEXTURE2D_DESC::default();
     unsafe {
-        staging_texture.GetDesc(desc);
+        staging_texture.GetDesc(&mut desc);
     }
 
     let bytes_per_pixel = 3;
@@ -157,9 +157,9 @@ fn get_bytes_from_texture(texture: ID3D11Texture2D) -> Vec<u8> {
 }
 
 fn prepare_staging_texture(texture: ID3D11Texture2D) -> windows::core::Result<ID3D11Texture2D> {
-    let desc = &mut D3D11_TEXTURE2D_DESC::default();
+    let mut desc = D3D11_TEXTURE2D_DESC::default();
     unsafe {
-        texture.GetDesc(desc);
+        texture.GetDesc(&mut desc);
     }
     if desc.Usage == D3D11_USAGE_STAGING && (desc.CPUAccessFlags & D3D11_CPU_ACCESS_READ).0 != 0 {
         windows::core::Result::Ok(texture)
@@ -182,9 +182,9 @@ fn copy_d3d_texture(
         ppdevice.GetImmediateContext(&mut ppimmediatecontext);
     }
     let ppimmediatecontext = ppimmediatecontext.unwrap();
-    let desc = &mut D3D11_TEXTURE2D_DESC::default();
+    let mut desc = D3D11_TEXTURE2D_DESC::default();
     unsafe {
-        texture.GetDesc(desc);
+        texture.GetDesc(&mut desc);
     }
     // Clear flags that we don't need
     desc.Usage = if as_staging_texture {
@@ -206,7 +206,7 @@ fn copy_d3d_texture(
 
     // Create and fill the texture copy
     unsafe {
-        let texture_copy = ppdevice.CreateTexture2D(desc, None)?;
+        let texture_copy = ppdevice.CreateTexture2D(&desc, None)?;
         ppimmediatecontext.CopyResource(&texture_copy, &texture);
         windows::core::Result::Ok(texture_copy)
     }
