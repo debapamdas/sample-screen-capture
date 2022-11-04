@@ -2,6 +2,7 @@ use std::mem;
 use std::sync::mpsc::sync_channel;
 use std::time::Instant;
 
+use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM};
 use windows::core::{IInspectable, Interface};
 use windows::Foundation::TypedEventHandler;
 use windows::Graphics::Capture::{Direct3D11CaptureFramePool, GraphicsCaptureItem};
@@ -65,15 +66,15 @@ fn encode_image(
     }
     let pixels = get_bytes_from_texture(texture);
     bitmap_encoder.SetPixelData(
-        BitmapPixelFormat::Rgba16,
+        BitmapPixelFormat::Bgra8,
         BitmapAlphaMode::Premultiplied,
         desc.Width,
         desc.Height,
         1.0,
         1.0,
         &pixels,
-    )?;
-    bitmap_encoder.FlushAsync()?.get()
+    ).expect("cannot encode");
+    bitmap_encoder.FlushAsync().expect("cannot flush").get()
 }
 
 fn take_snapshot(
@@ -105,7 +106,7 @@ fn take_snapshot(
 }
 
 fn get_encoder() -> windows::core::Result<BitmapEncoder> {
-    let path = windows::core::HSTRING::from(r"C:\Users\dedas\Pictures\scrrenshot.jpg");
+    let path = windows::core::HSTRING::from(r"C:\Users\dedas\Pictures\screenshot.jpg");
     let random_access_stream =
         FileRandomAccessStream::OpenAsync(&path, FileAccessMode::ReadWrite)?.get()?;
     BitmapEncoder::CreateAsync(BitmapEncoder::JpegEncoderId()?, &random_access_stream)?.get()
@@ -131,29 +132,33 @@ fn get_bytes_from_texture(texture: ID3D11Texture2D) -> Vec<u8> {
         staging_texture.GetDesc(&mut desc);
     }
 
-    let bytes_per_pixel = 3;
-
+    // let bytes_per_pixel = match desc.Format {
+    //     DXGI_FORMAT_B8G8R8A8_UNORM => 4,
+    //     _ => panic!("Unsupported format! {:?}", desc.Format),
+    // };
     let mapped_resource = unsafe {
         ppimmediatecontext
             .Map(&staging_texture, 0, D3D11_MAP_READ, 0)
             .expect("cannot get mapped resource")
     };
-    println!(
-        "format: {:?}, row pitch: {}",
-        desc.Format, mapped_resource.RowPitch
-    );
-    let bytes_stride = desc.Width * bytes_per_pixel;
-    let bytes = vec![
-        0;
-        (bytes_stride * desc.Width)
-            .try_into()
-            .expect("cannot cast to usize")
-    ];
+    let bytes = unsafe {
+        std::slice::from_raw_parts(mapped_resource.pData as *const u8, (desc.Height * mapped_resource.RowPitch) as usize)
+    };
+    //  // Make a copy of the data
+    //  let mut data = vec![0u8; ((desc.Width * desc.Height) * bytes_per_pixel) as usize];
+    //  for row in 0..desc.Height {
+    //      let data_begin = (row * (desc.Width * bytes_per_pixel)) as usize;
+    //      let data_end = ((row + 1) * (desc.Width * bytes_per_pixel)) as usize;
+    //      let slice_begin = (row * mapped_resource.RowPitch) as usize;
+    //      let slice_end = slice_begin + (desc.Width * bytes_per_pixel) as usize;
+    //      data[data_begin..data_end].copy_from_slice(&bytes[slice_begin..slice_end]);
+    //  }
+    
+    let ret = bytes.to_vec();
 
-    todo!();
     unsafe { ppimmediatecontext.Unmap(&staging_texture, 0) }
 
-    bytes
+    ret
 }
 
 fn prepare_staging_texture(texture: ID3D11Texture2D) -> windows::core::Result<ID3D11Texture2D> {
