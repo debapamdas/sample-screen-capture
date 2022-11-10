@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{time::Instant, path::Path};
 
 use windows::Graphics::DirectX::DirectXPixelFormat;
 
@@ -18,15 +18,13 @@ fn main() -> windows::core::Result<()> {
 
     let now = Instant::now();
 
-    // Initialize the encoder
-    let bitmap_encoder = encoder::get_encoder()?;
-
     // Take the snapshot
-    let texture = snapshot::take_snapshot(device, item, DirectXPixelFormat::B8G8R8A8UIntNormalized)
+    let (height, width, pixels) = snapshot::take_snapshot(device, capture_item, DirectXPixelFormat::B8G8R8A8UIntNormalized)
         .expect("cannot take snapshot");
-
+    // get encoder
+    let encoder = encoder::get_encoder(Path::new(r"C:\Users\dedas\Pictures\screenshot.jpg"))?;
     // Encode the image
-    encoder::encode_image(texture, bitmap_encoder)?;
+    encoder::encode_image(height, width, pixels, encoder)?;
 
     println!("{}", now.elapsed().as_millis());
 
