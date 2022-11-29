@@ -1,5 +1,6 @@
 use windows::Win32::{Foundation::{BOOL, HWND, LPARAM}, UI::WindowsAndMessaging::{GetWindowTextLengthW, EnumWindows}};
 
+#[allow(dead_code)]
 pub fn get_current_windows() -> Vec<HWND> {
     let mut windows = Vec::<HWND>::new();
     let windows_ptr = &mut windows as *mut Vec<HWND> as isize;

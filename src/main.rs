@@ -26,7 +26,7 @@ fn main() -> windows::core::Result<()> {
     // Encode the image
     encoder::encode_image(height, width, pixels, encoder)?;
 
-    println!("{}", now.elapsed().as_millis());
+    println!("screen captured in {} ms", now.elapsed().as_millis());
 
     Ok(())
 }

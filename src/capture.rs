@@ -14,6 +14,7 @@ pub fn create_capture_item_for_monitor(
     unsafe { activation_factory.CreateForMonitor(hmon) }
 }
 
+#[allow(dead_code)]
 pub fn create_capture_item_for_window(hwnd: HWND) -> windows::core::Result<GraphicsCaptureItem> {
     let activation_factory =
         windows::core::factory::<GraphicsCaptureItem, IGraphicsCaptureItemInterop>()?;
